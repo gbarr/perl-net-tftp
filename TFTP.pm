@@ -10,7 +10,7 @@ use strict;
 use vars qw($VERSION);
 use IO::File;
 
-$VERSION = "0.15"; # $Id: //depot/tftp/TFTP.pm#5 $
+$VERSION = "0.16"; # $Id: //depot/tftp/TFTP.pm#6 $
 
 sub RRQ	  () { 01 } # read request
 sub WRQ	  () { 02 } # write request
@@ -145,7 +145,7 @@ sub get {
     $self->{'error'} = $io->error
 	unless(close($io));
 
-    exists $self->{'error'};
+    exists $self->{'error'} ? undef : 1;
 }
 
 sub put {
@@ -162,7 +162,7 @@ sub put {
 	unless(ref($local)) {
 	    unless ($local = IO::File->new($file,O_RDONLY)) {
 		$self->{'error'} = "$file: $!";
-		return 0;
+		return undef;
 	    }
 	}
     }
@@ -192,7 +192,7 @@ sub put {
     $self->{'error'} = $io->error
 	unless(close($io));
 
-    exists $self->{'error'};
+    exists $self->{'error'} ? undef : 1;
 }
 
 package Net::TFTP::IO;
@@ -795,7 +795,7 @@ filehandle must be read ASAP as the server will otherwise timeout.
 
 If the LOCAL option is given then it can be a file name or a reference.
 If it is a reference it is assumed to be a reference that is valid as a
-filehandle. C<get> will return I<true> if the transfer is sucessful and
+filehandle. C<get> will return I<true> if the transfer is successful and
 I<undef> otherwise.
 
 Valid filehandles are
@@ -827,8 +827,8 @@ If the LOCAL option is missing the put will return a filehandle. This
 filehandle must be written to ASAP as the server will otherwise timeout.
 
 If the LOCAL option is given then it can be a file name or a reference.
-If it is a reference it is assumed to be a valid filehandle as descibed above.
-C<put> will return I<true> if the transfer is sucessful and I<undef> otherwise.
+If it is a reference it is assumed to be a valid filehandle as described above.
+C<put> will return I<true> if the transfer is successful and I<undef> otherwise.
 
 =item error
 
@@ -878,6 +878,6 @@ it under the same terms as Perl itself.
 
 =for html <hr>
 
-I<$Id: //depot/tftp/TFTP.pm#5 $>
+I<$Id: //depot/tftp/TFTP.pm#6 $>
 
 =cut

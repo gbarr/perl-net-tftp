@@ -1,3 +1,11 @@
+Change 746 on 2002/09/23 by <gbarr@pobox.com> (Graham Barr)
+
+	Fix return logic for get and put (patch from Bruce Gray)
+
+Change 726 on 2002/05/27 by <gbarr@pobox.com> (Graham Barr)
+
+	Release 0.15
+
 Change 725 on 2002/05/27 by <gbarr@pobox.com> (Graham Barr)
 
 	Fix 'Use of uninitialized' warning
