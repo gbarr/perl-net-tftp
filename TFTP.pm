@@ -10,7 +10,7 @@ use strict;
 use vars qw($VERSION);
 use IO::File;
 
-$VERSION = "0.12"; # $Id: //depot/tftp/TFTP.pm#1 $
+$VERSION = "0.13"; # $Id: //depot/tftp/TFTP.pm#3 $
 
 sub RRQ	  () { 01 } # read request
 sub WRQ	  () { 02 } # write request
@@ -125,6 +125,8 @@ sub get {
 	$local = IO::File->new($file,O_WRONLY|O_CREAT);
     }
 
+    binmode $local if $self->{'Mode'} eq 'octet';
+
     my($len,$pkt);
     while($len = sysread($io,$pkt,10240)) {
 	if($len < 0) {
@@ -169,6 +171,8 @@ sub put {
 
     return $io
 	unless defined($local) && defined($io);
+
+    binmode $local if $self->{'Mode'} eq 'octet';
 
     my($len,$pkt);
     while($len = sysread($local,$pkt,10240)) {
@@ -618,6 +622,9 @@ sub _send_data {
 	_dumppkt($sock,1,$opkt)
 	    if $self->{'Debug'};
     }
+    elsif (length($self->{'obuf'}) == 0 and $self->{'blksize'} == 1) {
+	# ignore
+    }
     elsif($^W) {
 	require Carp;
 	Carp::carp("Net::TFTP: Buffer underflow");
@@ -870,6 +877,6 @@ it under the same terms as Perl itself.
 
 =for html <hr>
 
-I<$Id: //depot/tftp/TFTP.pm#1 $>
+I<$Id: //depot/tftp/TFTP.pm#3 $>
 
 =cut

@@ -1,4 +1,4 @@
-Net::TFP was previously part of the libnet distribution. But has now
+Net::TFTP was previously part of the libnet distribution. But has now
 been separated out to a distribution of its own.
 
 INSTALLATION
