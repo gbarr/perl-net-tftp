@@ -1,6 +1,12 @@
+# This -*- perl -*- script makes the Makefile
+# $Id: //depot/asn/Makefile.PL#5 $
+
+use 5.005;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-  NAME => 'Net::TFTP',
-  VERSION_FROM => 'TFTP.pm'
+  VERSION_FROM  => 'TFTP.pm',
+  NAME          => 'Net::TFTP',
 );
+
+
