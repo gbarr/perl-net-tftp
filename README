@@ -1,0 +1,5 @@
+This is the first public release of Net::TFTP to provide the client
+side for transfering files using the trivial file transfer protocol.
+
+This module is being released by itself to get feedback, but future
+releases of this module will be part of the libnet distribution.
