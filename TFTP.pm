@@ -10,7 +10,7 @@ use strict;
 use vars qw($VERSION);
 use IO::File;
 
-$VERSION = "0.13"; # $Id: //depot/tftp/TFTP.pm#3 $
+$VERSION = "0.15"; # $Id: //depot/tftp/TFTP.pm#5 $
 
 sub RRQ	  () { 01 } # read request
 sub WRQ	  () { 02 } # write request
@@ -122,7 +122,7 @@ sub get {
     my $file = $local;
     unless(ref($local)) {
 	unlink($file);
-	$local = IO::File->new($file,O_WRONLY|O_CREAT);
+	$local = IO::File->new($file,O_WRONLY|O_TRUNC|O_CREAT);
     }
 
     binmode $local if $self->{'Mode'} eq 'octet';
@@ -556,7 +556,8 @@ sub _read {
 	    return _abort($self);
 	}
 
-	send($sock,$self->{'pkt'},0,$self->{'peer'});
+	send($sock,$self->{'pkt'},0,$self->{'peer'})
+	  if $self->{'peer'};
 
 	if ($self->{'Debug'}) {
 	    print STDERR "${sock} << ---- retry=${retry}\n";
@@ -877,6 +878,6 @@ it under the same terms as Perl itself.
 
 =for html <hr>
 
-I<$Id: //depot/tftp/TFTP.pm#3 $>
+I<$Id: //depot/tftp/TFTP.pm#5 $>
 
 =cut
