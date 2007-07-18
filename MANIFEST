@@ -3,3 +3,4 @@ MANIFEST
 Makefile.PL
 README
 TFTP.pm
+META.yml                                 Module meta-data (added by MakeMaker)

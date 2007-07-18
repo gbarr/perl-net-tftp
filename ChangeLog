@@ -1,3 +1,9 @@
+Release 0.17 -- Wed Jul 18 06:30:05 CDT 2007
+
+Enhancements
+ * Added support for IPv6 (patch from John Jason Brzozowski)
+
+
 Change 746 on 2002/09/23 by <gbarr@pobox.com> (Graham Barr)
 
 	Fix return logic for get and put (patch from Bruce Gray)
