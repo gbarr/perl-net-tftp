@@ -1,6 +1,6 @@
 # Net::TFTP.pm
 #
-# Copyright (c) 1998 Graham Barr <gbarr@pobox.com>. All rights reserved.
+# Copyright (c) 1998,2007 Graham Barr <gbarr@pobox.com>. All rights reserved.
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
@@ -10,7 +10,7 @@ use strict;
 use vars qw($VERSION);
 use IO::File;
 
-$VERSION = "0.16"; # $Id: //depot/tftp/TFTP.pm#6 $
+$VERSION = "0.17"; # $Id: TFTP.pm 12 2007-07-18 11:32:42Z gbarr $
 
 sub RRQ	  () { 01 } # read request
 sub WRQ	  () { 02 } # write request
@@ -25,16 +25,17 @@ sub new {
     my $pkg = shift;
     my $host = shift;
 
-    bless {
-	Debug 		=> 0,   	# Debug off
-	Timeout 	=> 5,   	# resend after 5 seconds
-	Retries 	=> 5,   	# resend max 5 times
-	Port 		=> 69,  	# tftp port number
-	BlockSize 	=> 0,   	# use default blocksize (512)
-	Mode 		=> 'netascii',	# transfer in netascii
-	@_,				# user overrides
-	Host 		=> $host,	# the hostname
-    }, $pkg;
+    	bless {
+		Debug 		=> 0,   	# Debug off
+		Timeout 	=> 5,   	# resend after 5 seconds
+		Retries 	=> 5,   	# resend max 5 times
+		Port 		=> 69,  	# tftp port number
+		BlockSize 	=> 0,   	# use default blocksize (512)
+		IpMode		=> 'v4',	# Operate in IPv6 mode, off by default
+		Mode 		=> 'netascii',	# transfer in netascii
+		@_,				# user overrides
+		Host 		=> $host,	# the hostname
+	}, $pkg;
 }
 
 sub timeout {
@@ -76,6 +77,13 @@ sub host {
     my $self = shift;
     my $v = $self->{'Host'};
     $self->{'Host'} = shift if @_;
+    $v
+}
+
+sub ip_mode {
+    my $self = shift;
+    my $v = $self->{'IpMode'};
+    $self->{'IpMode'} = shift if @_;
     $v
 }
 
@@ -208,20 +216,42 @@ sub new {
     my $io = $pkg->SUPER::new;
 
     $opts->{'Mode'} = lc($opts->{'Mode'});
+    $opts->{'IpMode'} = lc($opts->{'IpMode'});
     $opts->{'Mode'} = "netascii"
 	unless $opts->{'Mode'} eq "octet";
     $opts->{'ascii'} = lc($opts->{'Mode'}) eq "netascii";
 
     my $host = $opts->{'Host'};
-    my $port = $host =~ s/:(\d+)$// ? $1 : $opts->{'Port'};
+    ## jjmb - had to make an adjustment here the logic used originally does not work well
+    ##        with IPv6.
+    my $port = undef;
+    if($opts->{'IpMode'} eq "v6") {
+	    require Socket6;
+	    require IO::Socket::INET6;
+    	$port = $opts->{'Port'};
+    } else {
+    	$port = $host =~ s/:(\d+)$// ? $1 : $opts->{'Port'};
+    }
     my $addr = inet_aton($host);
 
-    unless($addr) {
-	$tftp->{'error'} = "Bad hostname '$host'";
-	return undef;
+    ## jjmb - added some logic here for the time being to prevent some errors from showing
+    if($opts->{'IpMode'} eq "v6") {
+            # Skipping validation
+     } else {
+	    unless($addr) {
+		$tftp->{'error'} = "Bad hostname '$host'";
+		return undef;
+	    }
     }
 
-    my $sock = IO::Socket::INET->new(Proto => 'udp');
+    ## jjmb - need to construct different objects depending on the IP version used
+    my $sock = undef;
+    if($opts->{'IpMode'} eq "v6") {
+    	$sock = IO::Socket::INET6->new(PeerAddr => $opts->{'Host'}, Port => $opts->{'Port'}, Proto => 'udp');
+    } else {
+    	$sock = IO::Socket::INET->new(Proto => 'udp');
+    }
+
     my $mode = $opts->{'Mode'};
     my $pkt  = pack("n a* c a* c", $op, $remote, 0, $mode, 0);
 
@@ -243,7 +273,11 @@ sub new {
 	@{$opts}{'obuf','blk','ack'} = ('',0,-1);
     }
 
-    send($sock,$pkt,0,pack_sockaddr_in($port,inet_aton($host)));
+    if($tftp->{'IpMode'} eq "v6") {
+    	send($sock,$pkt,0,Socket6::sockaddr_in6($port,Socket6::inet_pton(AF_INET6,$host)));
+    } else {
+    	send($sock,$pkt,0,pack_sockaddr_in($port,inet_aton($host)));
+    }
     _dumppkt($sock,1,$pkt) if $opts->{'Debug'};
 
     tie *$io, "Net::TFTP::IO",$opts;
@@ -583,7 +617,11 @@ sub _recv {
     # The struct in $peer can be bigger than needed for AF_INET
     # so could contain garbage at the end. unpacking and re-packing
     # will ensure it is zero filled (Thanks TomC)
-    $peer = pack_sockaddr_in(unpack_sockaddr_in($peer));
+    if($self->{'IpMode'} eq "v6") {
+    	$peer = Socket6::pack_sockaddr_in6(Socket6::unpack_sockaddr_in6($peer));
+    } else {
+    	$peer = pack_sockaddr_in(unpack_sockaddr_in($peer));
+    }
 
     $self->{'peer'} ||= $peer; # Remember first peer
 
@@ -776,6 +814,7 @@ to and OPTIONS are the default transfer options. Valid options are
  Port	    Port to send data to                                    69
  Mode	    Mode to transfer data in, "octet" or "netascii"     "netascii"
  BlockSize  Negotiate size of blocks to use in the transfer        512
+ IpMode	    Indicates whether to operate in IPv6 mode		   "v4"
 
 =back
 
@@ -852,6 +891,10 @@ Set or get the values for the various options. If an argument is passed
 then a new value is set for that option and the previous value returned.
 If no value is passed then the current value is returned.
 
+=item ip_mode ( [ VALUE ] )
+
+Set or get which verion of IP to use ("v4" or "v6")
+
 =item ascii
 
 =item netascii
@@ -872,12 +915,8 @@ Graham Barr <gbarr@pobox.com>
 
 =head1 COPYRIGHT
 
-Copyright (c) 1998 Graham Barr. All rights reserved.
+Copyright (c) 1998,2007 Graham Barr. All rights reserved.
 This program is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
-
-=for html <hr>
-
-I<$Id: //depot/tftp/TFTP.pm#6 $>
 
 =cut
