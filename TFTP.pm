@@ -226,6 +226,11 @@ sub new {
     $opts->{'ascii'} = lc($opts->{'Mode'}) eq "netascii";
 
     my $host = $opts->{'Host'};
+    do {
+            $tftp->{'error'} = "No hostname given";
+            return undef;
+    } unless defined($host);
+
     ## jjmb - had to make an adjustment here the logic used originally does not work well
     ##        with IPv6.
     my $port = undef;
