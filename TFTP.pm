@@ -129,7 +129,11 @@ sub get {
 
     my $file = $local;
     unless(ref($local)) {
-	unlink($file);
+	my $retval = unlink($file);
+        if ($retval < 1) {
+                $self->{'error'} = "Can not unlink $file: $!";
+                return undef;
+        }
 	$local = IO::File->new($file,O_WRONLY|O_TRUNC|O_CREAT);
     }
 
