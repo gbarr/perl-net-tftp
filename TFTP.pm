@@ -10,7 +10,7 @@ use strict;
 use vars qw($VERSION);
 use IO::File;
 
-$VERSION = "0.17"; # $Id: TFTP.pm 12 2007-07-18 11:32:42Z gbarr $
+$VERSION = "0.18";
 
 sub RRQ	  () { 01 } # read request
 sub WRQ	  () { 02 } # write request

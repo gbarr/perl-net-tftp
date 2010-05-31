@@ -4,3 +4,8 @@ Makefile.PL
 README
 TFTP.pm
 META.yml                                 Module meta-data (added by MakeMaker)
+t/00-load.t
+t/01-get.t
+t/02-new.t
+t/files/directory/empty
+t/files/source
