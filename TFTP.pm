@@ -10,7 +10,7 @@ use strict;
 use vars qw($VERSION);
 use IO::File;
 
-$VERSION = "0.17"; # $Id: TFTP.pm 12 2007-07-18 11:32:42Z gbarr $
+$VERSION = "0.18";
 
 sub RRQ	  () { 01 } # read request
 sub WRQ	  () { 02 } # write request
@@ -129,12 +129,11 @@ sub get {
 
     my $file = $local;
     unless(ref($local)) {
-	my $retval = unlink($file);
-        if ($retval < 1) {
+	$local = IO::File->new($file,O_WRONLY|O_TRUNC|O_CREAT);
+        if (not $local) {
                 $self->{'error'} = "Can not unlink $file: $!";
                 return undef;
         }
-	$local = IO::File->new($file,O_WRONLY|O_TRUNC|O_CREAT);
     }
 
     binmode $local if $self->{'Mode'} eq 'octet';
