@@ -129,12 +129,11 @@ sub get {
 
     my $file = $local;
     unless(ref($local)) {
-	my $retval = unlink($file);
-        if ($retval < 1) {
-                $self->{'error'} = "Can not unlink $file: $!";
+	$local = IO::File->new($file,O_WRONLY|O_TRUNC|O_CREAT);
+        unless ($local) {
+                $self->{'error'} = "Can not open $file: $!";
                 return undef;
         }
-	$local = IO::File->new($file,O_WRONLY|O_TRUNC|O_CREAT);
     }
 
     binmode $local if $self->{'Mode'} eq 'octet';
