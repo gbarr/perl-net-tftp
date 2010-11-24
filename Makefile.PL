@@ -7,7 +7,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
   VERSION_FROM  => 'TFTP.pm',
   NAME          => 'Net::TFTP',
-  BUILD_REQUIRES => {
+  PREREQ_PM     => {
 	            'Test::More' => 0.8701,
                      'Test::MockModule' => 0,
                      'Test::Warn' => 0,
