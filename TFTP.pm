@@ -10,7 +10,7 @@ use strict;
 use vars qw($VERSION);
 use IO::File;
 
-$VERSION = "0.18";
+$VERSION = "0.19";
 
 sub RRQ	  () { 01 } # read request
 sub WRQ	  () { 02 } # write request

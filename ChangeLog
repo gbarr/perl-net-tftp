@@ -1,3 +1,9 @@
+0.19 -- Wed Nov 24 18:22:33 CST 2010
+
+  * Get rid of unlink [Maik Hentsche]
+  * Fixed build_requires [Maik Hentsche]
+  * fix BUILD_REQUIRES to more classical PREREQ_PM [Steffen Schwigon]
+
 0.18 -- Mon May 31 10:38:13 CDT 2010
 
   * Added support for IPv6 (patch from John Jason Brzozowski)
