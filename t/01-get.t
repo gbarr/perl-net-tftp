@@ -16,6 +16,6 @@ $mock_io->mock('new',
 $tftp = Net::TFTP->new("some.host.name", BlockSize => 1024);
 my $retval = $tftp->get('somefile','t/files/directory');
 is($retval, undef, 'Error handled, no die');
-like($tftp->{error}, qr(Can not unlink t/files/directory), 'Error message');
+like($tftp->{error}, qr(Can not open t/files/directory), 'Error message');
 
 done_testing;
