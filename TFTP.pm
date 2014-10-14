@@ -548,7 +548,7 @@ sub _read {
 		# If we receive a packet we are not expecting
 		# then ACK the last packet again
 
-		if($blk == $self->{'blk'}) {
+		if($blk == $self->{'blk'} % 65536) {
 		    $self->{'blk'} = $blk+1;
 		    my $data = substr($ipkt,4);
 
@@ -568,7 +568,7 @@ sub _read {
 
 		    return length($data);
 		}
-		elsif($blk < $self->{'blk'}) {
+		elsif($blk < $self->{'blk'} % 65536) {
 		    redo; # already got this data
 		}
 	    }
