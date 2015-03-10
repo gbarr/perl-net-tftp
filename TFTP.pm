@@ -42,49 +42,49 @@ sub timeout {
     my $self = shift;
     my $v = $self->{'Timeout'};
     $self->{'Timeout'} = 0 + shift if @_;
-    $v
+    return $v;
 }
 
 sub debug {
     my $self = shift;
     my $v = $self->{'Debug'};
     $self->{'Debug'} = 0 + shift if @_;
-    $v
+    return $v;
 }
 
 sub port {
     my $self = shift;
     my $v = $self->{'Port'};
     $self->{'Port'} = 0 + shift if @_;
-    $v
+    return $v;
 }
 
 sub retries {
     my $self = shift;
     my $v = $self->{'Retries'};
     $self->{'Retries'} = 0 + shift if @_;
-    $v
+    return $v;
 }
 
 sub block_size {
     my $self = shift;
     my $v = $self->{'BlockSize'};
     $self->{'BlockSize'} = 0 + shift if @_;
-    $v
+    return $v;
 }
 
 sub host {
     my $self = shift;
     my $v = $self->{'Host'};
     $self->{'Host'} = shift if @_;
-    $v
+    return $v;
 }
 
 sub ip_mode {
     my $self = shift;
     my $v = $self->{'IpMode'};
     $self->{'IpMode'} = shift if @_;
-    $v
+    return $v;
 }
 
 sub ascii {
@@ -105,7 +105,7 @@ sub mode {
     my $v = $self->{'Mode'};
     $self->{'Mode'} = lc($_[0]) eq "netascii" ? "netascii" : "octet"
 	if @_;
-    $v
+    return $v;
 }
 
 sub error {
@@ -294,7 +294,7 @@ sub new {
 
 sub error {
     my $self = shift;
-    my $tied = UNIVERSAL::isa($self,'GLOB') && tied(*$self) || $self;
+    my $tied = eval{ $self->isa('GLOB')} && tied(*$self) || $self;
     exists $tied->{'error'} ? $tied->{'error'} : undef;
 }
 
@@ -356,7 +356,7 @@ sub READLINE {
 		my $len = $offset+length($sep);
 		# With 5.005 I could use the 4-arg substr
 		my $ret = substr($self->{'ibuf'},0,$len);
-		substr($self->{'ibuf'},0,$len) = "";
+		substr($self->{'ibuf'},0,$len , "");
 
 		return $ret;
 	    }
@@ -372,7 +372,7 @@ sub READLINE {
 	    delete $self->{'ibuf'};
 
 	    # And return undef (ie eof)
-	    return undef; 
+	    return undef;
 	}
 
 	# $res == 0 so there is no more data to read, just return
@@ -425,7 +425,7 @@ sub READ {
 	}
 
 	# remove what we placed into $_[0]
-	substr($self->{'ibuf'},0,$ret) = "";
+	substr($self->{'ibuf'},0,$ret , "");
     }
 
     # If we are returning less than what was asked for
@@ -433,7 +433,7 @@ sub READ {
     delete $self->{'ibuf'}
 	if $self->{'eof'} && length($self->{'ibuf'}) == 0 ;
 
-    $ret;
+    return $ret;
 }
 
 sub CLOSE {
@@ -482,14 +482,14 @@ sub _natoha {
     if($cr) {
 	my $ch = ord(substr($buf,0,1));
 	if($ch == 012) {		# CR.LF => \n
-	    substr($buf,0,1) = "\n";
+	    substr($buf,0,1 , "\n");
 	}
 	elsif($ch == 0) {		# CR.NUL => \r
-	    substr($buf,0,1) = "\r";
+	    substr($buf,0,1 , "\r");
 	}
 	else {
 	    # Hm, badly formed netascii
-	    substr($buf,0,0) = "\015";
+	    substr($buf,0,0 ,  "\015");
 	}
     }
 
@@ -526,88 +526,88 @@ sub _abort {
 #   <0 error
 
 sub _read {
-    my($self,$wait) = @_;
+						my($self,$wait) = @_;
 
-    return -1 if exists $self->{'error'};
-    return 0 if $self->{'eof'};
+						return -1 if exists $self->{'error'};
+						return 0 if $self->{'eof'};
 
-    my $sock    = $self->{'sock'} || return -1;
-    my $select  = $self->{'sel'};
-    my $timeout = $wait ? $self->{'Timeout'} : 0;
-    my $retry   = 0;
+						my $sock    = $self->{'sock'} || return -1;
+						my $select  = $self->{'sel'};
+						my $timeout = $wait ? $self->{'Timeout'} : 0;
+						my $retry   = 0;
 
-    while(1) {
-	if($select->can_read($timeout)) {
-	    my $ipkt = ''; # will be filled by _recv
-	    my($peer,$code,$blk) = _recv($self,$ipkt)
-		or return _abort($self);
+						while(1) {
+									if($select->can_read($timeout)) {
+													my $ipkt = ''; # will be filled by _recv
+													my($peer,$code,$blk) = _recv($self,$ipkt)
+													or return _abort($self);
 
-	    redo unless defined($peer); # do not send ACK to real peer
+													redo unless defined($peer); # do not send ACK to real peer
 
-	    if($code == Net::TFTP::DATA) {
-		# If we receive a packet we are not expecting
-		# then ACK the last packet again
+													if($code == Net::TFTP::DATA) {
+																# If we receive a packet we are not expecting
+																# then ACK the last packet again
 
-		if($blk == $self->{'blk'}) {
-		    $self->{'blk'} = $blk+1;
-		    my $data = substr($ipkt,4);
+																if($blk == $self->{'blk'}) {
+																				$self->{'blk'} = $blk+1;
+																				my $data = substr($ipkt,4);
 
-		    _natoha($data,$self->{'icr'})
-			if($self->{'ascii'});
+																				_natoha($data,$self->{'icr'})
+																				if($self->{'ascii'});
 
-		    $self->{'ibuf'} .= $data;
+																				$self->{'ibuf'} .= $data;
 
-		    my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::ACK,$blk);
-		    send($sock,$opkt,0,$peer);
+																				my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::ACK,$blk);
+																				send($sock,$opkt,0,$peer);
 
-		    _dumppkt($sock,1,$opkt)
-			if $self->{'Debug'};
+																				_dumppkt($sock,1,$opkt)
+																				if $self->{'Debug'};
 
-		    $self->{'eof'} = 1
-			if ( length($ipkt) < ($self->{'blksize'} + 4) );
+																				$self->{'eof'} = 1
+																				if ( length($ipkt) < ($self->{'blksize'} + 4) );
 
-		    return length($data);
-		}
-		elsif($blk < $self->{'blk'}) {
-		    redo; # already got this data
-		}
-	    }
-	    elsif($code == Net::TFTP::OACK) {
-		my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::ACK,0);
-		send($sock,$opkt,0,$peer);
+																				return length($data);
+																}
+																elsif($blk < $self->{'blk'}) {
+																	redo; # already got this data
+																}
+													}
+													elsif($code == Net::TFTP::OACK) {
+																my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::ACK,0);
+																send($sock,$opkt,0,$peer);
 
-		_dumppkt($sock,1,$opkt)
-		    if $self->{'Debug'};
+																_dumppkt($sock,1,$opkt)
+																	if $self->{'Debug'};
 
-		return _read($self,$wait);
-	    }
-	    elsif($code == Net::TFTP::ERROR) {
-		$self->{'error'} = substr($ipkt,4);
-		$self->{'eof'} = 1;
-		CLOSE($self);
-		return -1;
-	    }
+																return _read($self,$wait);
+													}
+													elsif($code == Net::TFTP::ERROR) {
+																$self->{'error'} = substr($ipkt,4);
+																$self->{'eof'} = 1;
+																CLOSE($self);
+																return -1;
+													}
 
-	    return _abort($self);
-	}
+													return _abort($self);
+									}
 
-	last unless $wait;
-	# Resend last packet, this will re ACK the last data packet
-	if($retry++ >= $self->{'Retries'}) {
-	    $self->{'error'} = "Transfer Timeout";
-	    return _abort($self);
-	}
+									last unless $wait;
+									# Resend last packet, this will re ACK the last data packet
+									if($retry++ >= $self->{'Retries'}) {
+										$self->{'error'} = "Transfer Timeout";
+										return _abort($self);
+									}
 
-	send($sock,$self->{'pkt'},0,$self->{'peer'})
-	  if $self->{'peer'};
+									send($sock,$self->{'pkt'},0,$self->{'peer'})
+									  if $self->{'peer'};
 
-	if ($self->{'Debug'}) {
-	    print STDERR "${sock} << ---- retry=${retry}\n";
-	    _dumppkt($sock,1,$self->{'pkt'});
-	}
-    }
+									if ($self->{'Debug'}) {
+										print {*STDERR} "${sock} << ---- retry=${retry}\n";
+										_dumppkt($sock,1,$self->{'pkt'});
+									}
+						}
 
-    # NOT REACHED
+						# NOT REACHED
 }
 
 sub _recv {
@@ -661,7 +661,7 @@ sub _send_data {
 	my $blk = ++$self->{'blk'};
 	my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::DATA,$blk)
 			    . substr($self->{'obuf'},0,$self->{'blksize'});
-	substr($self->{'obuf'},0,$self->{'blksize'}) = '';
+	substr($self->{'obuf'},0,$self->{'blksize'} , '');
 
 	my $sock = $self->{'sock'};
 	send($sock,$opkt,0,$self->{'peer'});
@@ -733,7 +733,7 @@ sub _write {
 	send($sock,$self->{'pkt'},0,$self->{'peer'});
 
 	if ($self->{'Debug'}) {
-	    print STDERR "${sock} << ---- retry=${retry}\n";
+	    print {*STDERR} "${sock} << ---- retry=${retry}\n";
 	    _dumppkt($sock,1,$self->{'pkt'});
 	}
     }
@@ -741,7 +741,7 @@ sub _write {
 }
 
 sub _dumppkt {
-    my($sock,$send) = @_; 
+    my($sock,$send) = @_;
     my($code,$blk) = unpack("nn",$_[2]);
     $send = $send ? "$sock <<" : "$sock >>";
     my $str = sprintf "%s %-4s",$send,$NAME[$code];
@@ -750,19 +750,19 @@ sub _dumppkt {
 	   || $code == Net::TFTP::ACK
 	   || $code == Net::TFTP::ERROR;
 
-    printf STDERR "%s length=%d\n",$str,length($_[2]);
+    printf {*STDERR} "%s length=%d\n",$str,length($_[2]);
     if($code == Net::TFTP::RRQ || $code == Net::TFTP::WRQ || $code == Net::TFTP::OACK) {
 	my @a = split("\0",substr($_[2],2));
-	printf STDERR "%s      filename=%s mode=%s\n",$send,splice(@a,0,2)
+	printf {*STDERR} "%s      filename=%s mode=%s\n",$send,splice(@a,0,2)
 		unless $code == Net::TFTP::OACK;
 	my %a = @a;
 	my($k,$v);
 	while(($k,$v) = each %a) {
-	    printf STDERR "%s      %s=%s\n",$send,$k,$v;
+	    printf {*STDERR} "%s      %s=%s\n",$send,$k,$v;
 	}
 
     }
-    printf STDERR "%s      %s\n",$send,substr($_[2],4)
+    printf  {*STDERR} "%s      %s\n",$send,substr($_[2],4)
 	if $code == Net::TFTP::ERROR;
 }
 
