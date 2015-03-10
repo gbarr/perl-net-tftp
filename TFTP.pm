@@ -526,88 +526,88 @@ sub _abort {
 #   <0 error
 
 sub _read {
-						my($self,$wait) = @_;
+	my($self,$wait) = @_;
 
-						return -1 if exists $self->{'error'};
-						return 0 if $self->{'eof'};
+	return -1 if exists $self->{'error'};
+	return 0 if $self->{'eof'};
 
-						my $sock    = $self->{'sock'} || return -1;
-						my $select  = $self->{'sel'};
-						my $timeout = $wait ? $self->{'Timeout'} : 0;
-						my $retry   = 0;
+	my $sock    = $self->{'sock'} || return -1;
+	my $select  = $self->{'sel'};
+	my $timeout = $wait ? $self->{'Timeout'} : 0;
+	my $retry   = 0;
 
-						while(1) {
-									if($select->can_read($timeout)) {
-													my $ipkt = ''; # will be filled by _recv
-													my($peer,$code,$blk) = _recv($self,$ipkt)
-													or return _abort($self);
+	while(1) {
+		if($select->can_read($timeout)) {
+				my $ipkt = ''; # will be filled by _recv
+				my($peer,$code,$blk) = _recv($self,$ipkt)
+				or return _abort($self);
 
-													redo unless defined($peer); # do not send ACK to real peer
+				redo unless defined($peer); # do not send ACK to real peer
 
-													if($code == Net::TFTP::DATA) {
-																# If we receive a packet we are not expecting
-																# then ACK the last packet again
+				if($code == Net::TFTP::DATA) {
+					# If we receive a packet we are not expecting
+					# then ACK the last packet again
 
-																if($blk == $self->{'blk'}) {
-																				$self->{'blk'} = $blk+1;
-																				my $data = substr($ipkt,4);
+					if($blk == $self->{'blk'}) {
+						$self->{'blk'} = $blk+1;
+						my $data = substr($ipkt,4);
 
-																				_natoha($data,$self->{'icr'})
-																				if($self->{'ascii'});
+						_natoha($data,$self->{'icr'})
+						if($self->{'ascii'});
 
-																				$self->{'ibuf'} .= $data;
+						$self->{'ibuf'} .= $data;
 
-																				my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::ACK,$blk);
-																				send($sock,$opkt,0,$peer);
+						my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::ACK,$blk);
+						send($sock,$opkt,0,$peer);
 
-																				_dumppkt($sock,1,$opkt)
-																				if $self->{'Debug'};
+						_dumppkt($sock,1,$opkt)
+						if $self->{'Debug'};
 
-																				$self->{'eof'} = 1
-																				if ( length($ipkt) < ($self->{'blksize'} + 4) );
+						$self->{'eof'} = 1
+						if ( length($ipkt) < ($self->{'blksize'} + 4) );
 
-																				return length($data);
-																}
-																elsif($blk < $self->{'blk'}) {
-																	redo; # already got this data
-																}
-													}
-													elsif($code == Net::TFTP::OACK) {
-																my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::ACK,0);
-																send($sock,$opkt,0,$peer);
+						return length($data);
+					}
+					elsif($blk < $self->{'blk'}) {
+						redo; # already got this data
+					}
+				}
+				elsif($code == Net::TFTP::OACK) {
+					my $opkt = $self->{'pkt'} = pack("nn", Net::TFTP::ACK,0);
+					send($sock,$opkt,0,$peer);
 
-																_dumppkt($sock,1,$opkt)
-																	if $self->{'Debug'};
+					_dumppkt($sock,1,$opkt)
+						if $self->{'Debug'};
 
-																return _read($self,$wait);
-													}
-													elsif($code == Net::TFTP::ERROR) {
-																$self->{'error'} = substr($ipkt,4);
-																$self->{'eof'} = 1;
-																CLOSE($self);
-																return -1;
-													}
+					return _read($self,$wait);
+				}
+				elsif($code == Net::TFTP::ERROR) {
+					$self->{'error'} = substr($ipkt,4);
+					$self->{'eof'} = 1;
+					CLOSE($self);
+					return -1;
+				}
 
-													return _abort($self);
-									}
+				return _abort($self);
+		}
 
-									last unless $wait;
-									# Resend last packet, this will re ACK the last data packet
-									if($retry++ >= $self->{'Retries'}) {
-										$self->{'error'} = "Transfer Timeout";
-										return _abort($self);
-									}
+		last unless $wait;
+		# Resend last packet, this will re ACK the last data packet
+		if($retry++ >= $self->{'Retries'}) {
+			$self->{'error'} = "Transfer Timeout";
+			return _abort($self);
+		}
 
-									send($sock,$self->{'pkt'},0,$self->{'peer'})
-									  if $self->{'peer'};
+		send($sock,$self->{'pkt'},0,$self->{'peer'})
+		  if $self->{'peer'};
 
-									if ($self->{'Debug'}) {
-										print {*STDERR} "${sock} << ---- retry=${retry}\n";
-										_dumppkt($sock,1,$self->{'pkt'});
-									}
-						}
+		if ($self->{'Debug'}) {
+			print {*STDERR} "${sock} << ---- retry=${retry}\n";
+			_dumppkt($sock,1,$self->{'pkt'});
+		}
+	}
 
-						# NOT REACHED
+	# NOT REACHED
 }
 
 sub _recv {
