@@ -15,7 +15,7 @@ WriteMakefile(
         },
         build_requires => {
           'Test::More' => 0.8701,
-          'Test::MockModule' => 0,
+          'Test::MockModule' => '0.11',
           'Test::Warn' => 0,
         },
       }
