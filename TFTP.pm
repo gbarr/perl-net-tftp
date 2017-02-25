@@ -548,7 +548,7 @@ sub _read {
 		# If we receive a packet we are not expecting
 		# then ACK the last packet again
 
-		if($blk == $self->{'blk'}) {
+		if($blk == $self->{'blk'} % 65536) {
 		    $self->{'blk'} = $blk+1;
 		    my $data = substr($ipkt,4);
 
@@ -568,7 +568,7 @@ sub _read {
 
 		    return length($data);
 		}
-		elsif($blk < $self->{'blk'}) {
+		elsif($blk < $self->{'blk'} % 65536) {
 		    redo; # already got this data
 		}
 	    }
@@ -691,7 +691,7 @@ sub _write {
     my $retry   = 0;
 
     return _send_data($self)
-	if $self->{'ack'} == $self->{'blk'};
+	if $self->{'ack'} == $self->{'blk'} % 65536;
 
     while(1) {
 	if($select->can_read($timeout)) {
@@ -707,11 +707,11 @@ sub _write {
 	    }
 
 	    if($code == Net::TFTP::ACK) {
-		if ($self->{'blk'} == $blk) {
+		if ($self->{'blk'} % 65536 == $blk) {
 		    $self->{'ack'} = $blk;
 		    return _send_data($self);
 		}
-		elsif ($self->{'blk'} > $blk) {
+		elsif ($self->{'blk'} % 65536 > $blk) {
 		    redo; # duplicate ACK
 		}
 	    }
