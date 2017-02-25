@@ -9,7 +9,7 @@ WriteMakefile(
   NAME          => 'Net::TFTP',
   PREREQ_PM     => {
 	            'Test::More' => 0.8701,
-                     'Test::MockModule' => 0,
+                     'Test::MockModule' => '0.11',
                      'Test::Warn' => 0,
 	            },
   (eval { ExtUtils::MakeMaker->VERSION(6.21) } ? (LICENSE => 'perl') : ()),
