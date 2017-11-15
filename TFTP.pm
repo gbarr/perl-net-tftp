@@ -901,7 +901,7 @@ If no value is passed then the current value is returned.
 
 =item ip_mode ( [ VALUE ] )
 
-Set or get which verion of IP to use ("v4" or "v6")
+Set or get which version of IP to use ("v4" or "v6")
 
 =item ascii
 
